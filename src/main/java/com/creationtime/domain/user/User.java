@@ -53,7 +53,7 @@ public class User {
         this.status = AccountStatus.ACTIVE;
     }
 
-    public void changeRole(UserRole role) {
+    public void setRole(UserRole role) {
         this.role = Objects.requireNonNull(role);
     }
 
