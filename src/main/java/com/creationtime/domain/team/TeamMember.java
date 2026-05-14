@@ -24,19 +24,16 @@ public class TeamMember {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
-    private final User user;
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "team_id")
-    private final Team team;
+    private Team team;
 
     private String teamRole;
-    private final LocalDateTime joinedAt;
+    private LocalDateTime joinedAt;
 
     protected TeamMember() {
-        this.user = null;
-        this.team = null;
-        this.joinedAt = null;
     }
 
     public TeamMember(User user, Team team, String teamRole) {

@@ -1,7 +1,7 @@
 package com.creationtime.domain.user;
 
 import com.creationtime.domain.common.DomainException;
-import jakarta.persistence.Embedded;
+import com.creationtime.domain.common.Required;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 
 import java.util.Objects;
 
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -21,11 +22,13 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Embedded
-    private ProfileInfo profileInfo;
-
-    @Embedded
-    private CompetencyInfo competencyInfo;
+    private String name;
+    private String email;
+    private String loginId;
+    private String password;
+    private String interestField;
+    private String techStack;
+    private String desiredRole;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
@@ -38,9 +41,14 @@ public class User {
     protected User() {
     }
 
-    public User(ProfileInfo profileInfo, CompetencyInfo competencyInfo) {
-        this.profileInfo = Objects.requireNonNull(profileInfo);
-        this.competencyInfo = Objects.requireNonNull(competencyInfo);
+    public User(String name, String email, String loginId, String password, String interestField, String techStack, String desiredRole) {
+        this.name = Required.text(name, "name");
+        this.email = Required.text(email, "email");
+        this.loginId = Required.text(loginId, "loginId");
+        this.password = Required.text(password, "password");
+        this.interestField = Required.text(interestField, "interestField");
+        this.techStack = Required.text(techStack, "techStack");
+        this.desiredRole = Required.text(desiredRole, "desiredRole");
         this.role = UserRole.REGISTERED_USER;
         this.status = AccountStatus.ACTIVE;
     }
@@ -49,9 +57,12 @@ public class User {
         this.role = Objects.requireNonNull(role);
     }
 
-    public void updateProfile(ProfileInfo profileInfo, CompetencyInfo competencyInfo) {
-        this.profileInfo = Objects.requireNonNull(profileInfo);
-        this.competencyInfo = Objects.requireNonNull(competencyInfo);
+    public void updateProfile(String name, String email, String interestField, String techStack, String desiredRole) {
+        this.name = Required.text(name, "name");
+        this.email = Required.text(email, "email");
+        this.interestField = Required.text(interestField, "interestField");
+        this.techStack = Required.text(techStack, "techStack");
+        this.desiredRole = Required.text(desiredRole, "desiredRole");
     }
 
     public void increasePenalty(int score) {
@@ -81,7 +92,7 @@ public class User {
     }
 
     public boolean matchesPassword(String password) {
-        return profileInfo.password().equals(password);
+        return this.password.equals(password);
     }
 
     public Long id() {
@@ -95,12 +106,28 @@ public class User {
         this.id = Objects.requireNonNull(id);
     }
 
-    public ProfileInfo profileInfo() {
-        return profileInfo;
+    public String name() {
+        return name;
     }
 
-    public CompetencyInfo competencyInfo() {
-        return competencyInfo;
+    public String email() {
+        return email;
+    }
+
+    public String loginId() {
+        return loginId;
+    }
+
+    public String interestField() {
+        return interestField;
+    }
+
+    public String techStack() {
+        return techStack;
+    }
+
+    public String desiredRole() {
+        return desiredRole;
     }
 
     public int penaltyScore() {

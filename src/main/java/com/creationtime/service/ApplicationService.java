@@ -7,21 +7,21 @@ import com.creationtime.domain.user.User;
 import com.creationtime.repository.ApplicationRepository;
 import com.creationtime.repository.TeamRepository;
 import com.creationtime.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class ApplicationService {
-    private final ApplicationRepository applicationRepository;
-    private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
+    @Autowired
+    private ApplicationRepository applicationRepository;
 
-    public ApplicationService(ApplicationRepository applicationRepository, TeamRepository teamRepository, UserRepository userRepository) {
-        this.applicationRepository = applicationRepository;
-        this.teamRepository = teamRepository;
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public Application applyToTeam(Long teamId, Long applicantId, String message) {
         Team team = findTeam(teamId);

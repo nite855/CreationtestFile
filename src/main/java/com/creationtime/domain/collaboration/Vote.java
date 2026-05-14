@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Entity
 @Table(name = "votes")
@@ -34,10 +33,11 @@ public class Vote {
     private String description;
 
     @ElementCollection
-    private List<VoteOption> options;
+    private List<String> options;
 
     @Transient
-    private final Map<User, VoteOption> ballots = new LinkedHashMap<>();
+    private Map<User, String> ballots = new LinkedHashMap<>();
+
     private LocalDateTime deadline;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -49,15 +49,15 @@ public class Vote {
     protected Vote() {
     }
 
-    public Vote(String title, String description, List<String> optionTexts, LocalDateTime deadline, User creator, Team team) {
+    public Vote(String title, String description, List<String> options, LocalDateTime deadline, User creator, Team team) {
         team.assertLeader(creator);
         this.title = Required.text(title, "title");
         this.description = Required.text(description, "description");
-        if (optionTexts == null || optionTexts.size() < 2) {
+        if (options == null || options.size() < 2) {
             throw new DomainException("vote needs at least two options.");
         }
-        this.options = IntStream.range(0, optionTexts.size())
-                .mapToObj(index -> new VoteOption(index + 1L, optionTexts.get(index)))
+        this.options = options.stream()
+                .map(option -> Required.text(option, "option"))
                 .toList();
         if (deadline == null || deadline.isBefore(LocalDateTime.now())) {
             throw new DomainException("deadline must be in the future.");
@@ -66,16 +66,16 @@ public class Vote {
         this.team = Objects.requireNonNull(team);
     }
 
-    public void participate(User voter, long optionId) {
+    public void participate(User voter, String selectedOption) {
         team.assertMember(voter);
         if (closed || isExpired()) {
             throw new DomainException("vote is closed.");
         }
-        VoteOption selected = options.stream()
-                .filter(option -> option.id() == optionId)
-                .findFirst()
-                .orElseThrow(() -> new DomainException("vote option not found."));
-        ballots.put(voter, selected);
+        String option = Required.text(selectedOption, "selectedOption");
+        if (!options.contains(option)) {
+            throw new DomainException("vote option not found.");
+        }
+        ballots.put(voter, option);
     }
 
     public void close(User requester) {
@@ -86,7 +86,7 @@ public class Vote {
     public Map<String, Long> result() {
         return options.stream()
                 .collect(Collectors.toMap(
-                        VoteOption::text,
+                        option -> option,
                         option -> ballots.values().stream().filter(option::equals).count(),
                         (left, right) -> left,
                         LinkedHashMap::new
@@ -112,11 +112,11 @@ public class Vote {
         return id;
     }
 
-    public List<VoteOption> options() {
+    public List<String> options() {
         return Collections.unmodifiableList(options);
     }
 
-    public Map<User, VoteOption> ballots() {
+    public Map<User, String> ballots() {
         return Collections.unmodifiableMap(ballots);
     }
 }

@@ -3,9 +3,11 @@ package com.creationtime.domain.recruitment;
 import com.creationtime.domain.common.DomainException;
 import com.creationtime.domain.common.Required;
 import com.creationtime.domain.team.Team;
+import com.creationtime.domain.team.TeamCategory;
 import com.creationtime.domain.user.User;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,8 +31,16 @@ public class RecruitPost {
     @Lob
     private String content;
 
-    @Embedded
-    private RecruitInfo recruitInfo;
+    @Enumerated(EnumType.STRING)
+    private TeamCategory category;
+
+    private String recruitField;
+    private String techStack;
+    private String requiredRole;
+    private int recruitCount;
+    private String progressMethod;
+    private String contactLink;
+    private LocalDateTime deadline;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id")
@@ -46,21 +56,69 @@ public class RecruitPost {
     protected RecruitPost() {
     }
 
-    public RecruitPost(String title, String content, RecruitInfo recruitInfo, User author, Team team) {
+    public RecruitPost(
+            String title,
+            String content,
+            TeamCategory category,
+            String recruitField,
+            String techStack,
+            String requiredRole,
+            int recruitCount,
+            String progressMethod,
+            String contactLink,
+            LocalDateTime deadline,
+            User author,
+            Team team
+    ) {
         team.assertLeader(author);
         this.title = Required.text(title, "title");
         this.content = Required.text(content, "content");
-        this.recruitInfo = Objects.requireNonNull(recruitInfo);
+        changeRecruitFields(category, recruitField, techStack, requiredRole, recruitCount, progressMethod, contactLink, deadline);
         this.author = Objects.requireNonNull(author);
         this.team = Objects.requireNonNull(team);
         this.createdAt = LocalDateTime.now();
     }
 
-    public void modify(User editor, String title, String content, RecruitInfo recruitInfo) {
+    public void modify(
+            User editor,
+            String title,
+            String content,
+            TeamCategory category,
+            String recruitField,
+            String techStack,
+            String requiredRole,
+            int recruitCount,
+            String progressMethod,
+            String contactLink,
+            LocalDateTime deadline
+    ) {
         team.assertLeader(editor);
         this.title = Required.text(title, "title");
         this.content = Required.text(content, "content");
-        this.recruitInfo = Objects.requireNonNull(recruitInfo);
+        changeRecruitFields(category, recruitField, techStack, requiredRole, recruitCount, progressMethod, contactLink, deadline);
+    }
+
+    private void changeRecruitFields(
+            TeamCategory category,
+            String recruitField,
+            String techStack,
+            String requiredRole,
+            int recruitCount,
+            String progressMethod,
+            String contactLink,
+            LocalDateTime deadline
+    ) {
+        this.category = Objects.requireNonNull(category);
+        this.recruitField = Required.text(recruitField, "recruitField");
+        this.techStack = Required.text(techStack, "techStack");
+        this.requiredRole = Required.text(requiredRole, "requiredRole");
+        this.recruitCount = Required.positive(recruitCount, "recruitCount");
+        this.progressMethod = Required.text(progressMethod, "progressMethod");
+        this.contactLink = Required.text(contactLink, "contactLink");
+        if (deadline == null || deadline.isBefore(LocalDateTime.now())) {
+            throw new DomainException("deadline must be in the future.");
+        }
+        this.deadline = deadline;
     }
 
     public void close(User requester) {
@@ -69,7 +127,7 @@ public class RecruitPost {
     }
 
     public boolean isRecruiting() {
-        return !closed && recruitInfo.deadline().isAfter(LocalDateTime.now());
+        return !closed && deadline.isAfter(LocalDateTime.now());
     }
 
     public void assignId(Long id) {
@@ -91,8 +149,36 @@ public class RecruitPost {
         return content;
     }
 
-    public RecruitInfo recruitInfo() {
-        return recruitInfo;
+    public TeamCategory category() {
+        return category;
+    }
+
+    public String recruitField() {
+        return recruitField;
+    }
+
+    public String techStack() {
+        return techStack;
+    }
+
+    public String requiredRole() {
+        return requiredRole;
+    }
+
+    public int recruitCount() {
+        return recruitCount;
+    }
+
+    public String progressMethod() {
+        return progressMethod;
+    }
+
+    public String contactLink() {
+        return contactLink;
+    }
+
+    public LocalDateTime deadline() {
+        return deadline;
     }
 
     public User author() {

@@ -6,13 +6,14 @@ import com.creationtime.domain.common.DomainException;
 import com.creationtime.domain.recruitment.Application;
 import com.creationtime.domain.team.DismissalReason;
 import com.creationtime.domain.team.Team;
-import com.creationtime.domain.team.TeamInfo;
+import com.creationtime.domain.team.TeamCategory;
 import com.creationtime.domain.user.User;
 import com.creationtime.repository.ApplicationRepository;
 import com.creationtime.repository.ScheduleRepository;
 import com.creationtime.repository.TeamRepository;
 import com.creationtime.repository.UserRepository;
 import com.creationtime.repository.VoteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,32 +23,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class TeamService {
-    private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
-    private final ApplicationRepository applicationRepository;
-    private final VoteRepository voteRepository;
-    private final ScheduleRepository scheduleRepository;
+    @Autowired
+    private TeamRepository teamRepository;
 
-    public TeamService(
-            TeamRepository teamRepository,
-            UserRepository userRepository,
-            ApplicationRepository applicationRepository,
-            VoteRepository voteRepository,
-            ScheduleRepository scheduleRepository
-    ) {
-        this.teamRepository = teamRepository;
-        this.userRepository = userRepository;
-        this.applicationRepository = applicationRepository;
-        this.voteRepository = voteRepository;
-        this.scheduleRepository = scheduleRepository;
-    }
+    @Autowired
+    private UserRepository userRepository;
 
-    public Team createTeam(Long leaderId, TeamInfo teamInfo) {
-        if (teamRepository.existsByInfoName(teamInfo.name())) {
+    @Autowired
+    private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private ScheduleRepository scheduleRepository;
+
+    public Team createTeam(Long leaderId, String name, TeamCategory category, int maxMemberCount, String requiredTechStack, String description) {
+        if (teamRepository.existsByName(name)) {
             throw new DomainException("team name already exists.");
         }
         User leader = findUser(leaderId);
-        return teamRepository.save(new Team(teamInfo, leader));
+        return teamRepository.save(new Team(name, category, maxMemberCount, requiredTechStack, description, leader));
     }
 
     public void deleteTeam(Long teamId, Long leaderId, String confirmTeamName) {
@@ -76,9 +72,9 @@ public class TeamService {
         return voteRepository.save(vote);
     }
 
-    public void participateVote(Long voteId, Long userId, long optionId) {
+    public void participateVote(Long voteId, Long userId, String selectedOption) {
         Vote vote = voteRepository.findById(voteId).orElseThrow(() -> new DomainException("vote not found."));
-        vote.participate(findUser(userId), optionId);
+        vote.participate(findUser(userId), selectedOption);
         voteRepository.save(vote);
     }
 
@@ -94,7 +90,7 @@ public class TeamService {
         StringBuilder csv = new StringBuilder("userId,name,userRole,teamRole\n");
         team.members().forEach(member -> csv.append(member.user().id())
                 .append(",")
-                .append(member.user().profileInfo().name())
+                .append(member.user().name())
                 .append(",")
                 .append(member.user().role())
                 .append(",")

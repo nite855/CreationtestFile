@@ -4,9 +4,10 @@ import com.creationtime.domain.collaboration.Schedule;
 import com.creationtime.domain.collaboration.Vote;
 import com.creationtime.domain.team.DismissalReason;
 import com.creationtime.domain.team.Team;
-import com.creationtime.domain.team.TeamInfo;
+import com.creationtime.domain.team.TeamCategory;
 import com.creationtime.service.ApplicationService;
 import com.creationtime.service.TeamService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,17 +21,22 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/teams")
 public class TeamController {
-    private final TeamService teamService;
-    private final ApplicationService applicationService;
+    @Autowired
+    private TeamService teamService;
 
-    public TeamController(TeamService teamService, ApplicationService applicationService) {
-        this.teamService = teamService;
-        this.applicationService = applicationService;
-    }
+    @Autowired
+    private ApplicationService applicationService;
 
     @PostMapping
     public Team createTeam(@RequestBody CreateTeamRequest request) {
-        return teamService.createTeam(request.leaderId(), request.teamInfo());
+        return teamService.createTeam(
+                request.leaderId(),
+                request.name(),
+                request.category(),
+                request.maxMemberCount(),
+                request.requiredTechStack(),
+                request.description()
+        );
     }
 
     @PostMapping("/{teamId}/applications")
@@ -72,7 +78,7 @@ public class TeamController {
 
     @PostMapping("/votes/{voteId}/ballots")
     public void participateVote(@PathVariable Long voteId, @RequestBody ParticipateVoteRequest request) {
-        teamService.participateVote(voteId, request.userId(), request.optionId());
+        teamService.participateVote(voteId, request.userId(), request.selectedOption());
     }
 
     @PostMapping("/{teamId}/schedules")
@@ -84,7 +90,14 @@ public class TeamController {
         return teamService.exportCsv(teamId, leaderId);
     }
 
-    public record CreateTeamRequest(Long leaderId, TeamInfo teamInfo) {
+    public record CreateTeamRequest(
+            Long leaderId,
+            String name,
+            TeamCategory category,
+            int maxMemberCount,
+            String requiredTechStack,
+            String description
+    ) {
     }
 
     public record ApplyRequest(Long applicantId, String message) {
@@ -102,7 +115,7 @@ public class TeamController {
     public record CreateVoteRequest(Long leaderId, String title, String description, List<String> options, LocalDateTime deadline) {
     }
 
-    public record ParticipateVoteRequest(Long userId, long optionId) {
+    public record ParticipateVoteRequest(Long userId, String selectedOption) {
     }
 
     public record CreateScheduleRequest(Long leaderId, String title, String content, LocalDateTime start, LocalDateTime end) {

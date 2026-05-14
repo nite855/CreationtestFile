@@ -4,31 +4,34 @@ import com.creationtime.domain.collaboration.Comment;
 import com.creationtime.domain.collaboration.Post;
 import com.creationtime.domain.collaboration.PostCategory;
 import com.creationtime.domain.common.DomainException;
-import com.creationtime.domain.recruitment.RecruitInfo;
 import com.creationtime.domain.recruitment.RecruitPost;
 import com.creationtime.domain.team.Team;
+import com.creationtime.domain.team.TeamCategory;
 import com.creationtime.domain.user.User;
 import com.creationtime.repository.PostRepository;
 import com.creationtime.repository.RecruitPostRepository;
 import com.creationtime.repository.TeamRepository;
 import com.creationtime.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @Transactional
 public class PostService {
-    private final PostRepository postRepository;
-    private final RecruitPostRepository recruitPostRepository;
-    private final TeamRepository teamRepository;
-    private final UserRepository userRepository;
+    @Autowired
+    private PostRepository postRepository;
 
-    public PostService(PostRepository postRepository, RecruitPostRepository recruitPostRepository, TeamRepository teamRepository, UserRepository userRepository) {
-        this.postRepository = postRepository;
-        this.recruitPostRepository = recruitPostRepository;
-        this.teamRepository = teamRepository;
-        this.userRepository = userRepository;
-    }
+    @Autowired
+    private RecruitPostRepository recruitPostRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public Post createPost(Long teamId, Long authorId, String title, String content, PostCategory category) {
         Post post = new Post(title, content, category, findUser(authorId), findTeam(teamId));
@@ -56,15 +59,54 @@ public class PostService {
         return comment;
     }
 
-    public RecruitPost createRecruitPost(Long teamId, Long authorId, String title, String content, RecruitInfo recruitInfo) {
-        RecruitPost recruitPost = new RecruitPost(title, content, recruitInfo, findUser(authorId), findTeam(teamId));
+    public RecruitPost createRecruitPost(
+            Long teamId,
+            Long authorId,
+            String title,
+            String content,
+            TeamCategory category,
+            String recruitField,
+            String techStack,
+            String requiredRole,
+            int recruitCount,
+            String progressMethod,
+            String contactLink,
+            LocalDateTime deadline
+    ) {
+        RecruitPost recruitPost = new RecruitPost(
+                title,
+                content,
+                category,
+                recruitField,
+                techStack,
+                requiredRole,
+                recruitCount,
+                progressMethod,
+                contactLink,
+                deadline,
+                findUser(authorId),
+                findTeam(teamId)
+        );
         return recruitPostRepository.save(recruitPost);
     }
 
-    public void modifyRecruitPost(Long recruitPostId, Long editorId, String title, String content, RecruitInfo recruitInfo) {
+    public void modifyRecruitPost(
+            Long recruitPostId,
+            Long editorId,
+            String title,
+            String content,
+            TeamCategory category,
+            String recruitField,
+            String techStack,
+            String requiredRole,
+            int recruitCount,
+            String progressMethod,
+            String contactLink,
+            LocalDateTime deadline
+    ) {
         RecruitPost recruitPost = recruitPostRepository.findById(recruitPostId)
                 .orElseThrow(() -> new DomainException("recruit post not found."));
-        recruitPost.modify(findUser(editorId), title, content, recruitInfo);
+        recruitPost.modify(findUser(editorId), title, content, category, recruitField, techStack, requiredRole, recruitCount, progressMethod, contactLink, deadline);
         recruitPostRepository.save(recruitPost);
     }
 

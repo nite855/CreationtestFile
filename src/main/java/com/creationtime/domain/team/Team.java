@@ -1,13 +1,15 @@
 package com.creationtime.domain.team;
 
 import com.creationtime.domain.common.DomainException;
+import com.creationtime.domain.common.Required;
 import com.creationtime.domain.recruitment.Application;
 import com.creationtime.domain.recruitment.ApplicationStatus;
 import com.creationtime.domain.user.User;
 import com.creationtime.domain.user.UserRole;
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -28,20 +30,29 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Embedded
-    private TeamInfo info;
-    private final LocalDateTime createdAt;
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    private TeamCategory category;
+
+    private int maxMemberCount;
+    private String requiredTechStack;
+    private String description;
+    private LocalDateTime createdAt;
     private boolean deleted;
 
     @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private final List<TeamMember> members = new ArrayList<>();
+    private List<TeamMember> members = new ArrayList<>();
 
     protected Team() {
-        this.createdAt = null;
     }
 
-    public Team(TeamInfo info, User leader) {
-        this.info = Objects.requireNonNull(info);
+    public Team(String name, TeamCategory category, int maxMemberCount, String requiredTechStack, String description, User leader) {
+        this.name = Required.text(name, "team name");
+        this.category = Objects.requireNonNull(category);
+        this.maxMemberCount = Required.positive(maxMemberCount, "maxMemberCount");
+        this.requiredTechStack = Required.text(requiredTechStack, "requiredTechStack");
+        this.description = Required.text(description, "description");
         this.createdAt = LocalDateTime.now();
         addInitialLeader(leader);
     }
@@ -49,7 +60,7 @@ public class Team {
     private void addInitialLeader(User leader) {
         leader.assertCanUseService();
         leader.changeRole(UserRole.TEAM_LEADER);
-        members.add(new TeamMember(leader, this, "팀장"));
+        members.add(new TeamMember(leader, this, "leader"));
     }
 
     public Application apply(User applicant, String message) {
@@ -95,15 +106,14 @@ public class Team {
 
     public void changeMemberTeamRole(User leader, User targetUser, String teamRole) {
         assertLeader(leader);
-        TeamMember target = findMember(targetUser);
-        target.changeTeamRole(teamRole);
+        findMember(targetUser).changeTeamRole(teamRole);
     }
 
     public void dismissMember(User leader, User targetUser, DismissalReason reason) {
         assertLeader(leader);
         TeamMember target = findMember(targetUser);
         if (target.user() == leader) {
-            throw new DomainException("cannot dismiss the last leader.");
+            throw new DomainException("cannot dismiss the leader.");
         }
         members.remove(target);
         targetUser.increasePenalty(reason.penaltyScore());
@@ -111,7 +121,7 @@ public class Team {
 
     public void delete(User leader, String confirmTeamName) {
         assertLeader(leader);
-        if (!info.name().equals(confirmTeamName)) {
+        if (!name.equals(confirmTeamName)) {
             throw new DomainException("team name confirmation does not match.");
         }
         deleted = true;
@@ -137,7 +147,7 @@ public class Team {
     }
 
     public boolean isFull() {
-        return members.size() >= info.maxMemberCount();
+        return members.size() >= maxMemberCount;
     }
 
     public int memberCount() {
@@ -168,8 +178,24 @@ public class Team {
         return id;
     }
 
-    public TeamInfo info() {
-        return info;
+    public String name() {
+        return name;
+    }
+
+    public TeamCategory category() {
+        return category;
+    }
+
+    public int maxMemberCount() {
+        return maxMemberCount;
+    }
+
+    public String requiredTechStack() {
+        return requiredTechStack;
+    }
+
+    public String description() {
+        return description;
     }
 
     public List<TeamMember> members() {

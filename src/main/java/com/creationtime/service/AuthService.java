@@ -1,34 +1,30 @@
 package com.creationtime.service;
 
 import com.creationtime.domain.common.DomainException;
-import com.creationtime.domain.user.CompetencyInfo;
-import com.creationtime.domain.user.ProfileInfo;
 import com.creationtime.domain.user.User;
 import com.creationtime.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class AuthService {
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public AuthService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    public User registerUser(ProfileInfo profileInfo, CompetencyInfo competencyInfo) {
-        if (userRepository.findByProfileInfoLoginId(profileInfo.loginId()).isPresent()) {
+    public User registerUser(String name, String email, String loginId, String password, String interestField, String techStack, String desiredRole) {
+        if (userRepository.findByLoginId(loginId).isPresent()) {
             throw new DomainException("loginId already exists.");
         }
-        if (userRepository.existsByProfileInfoEmail(profileInfo.email())) {
+        if (userRepository.existsByEmail(email)) {
             throw new DomainException("email already exists.");
         }
-        return userRepository.save(new User(profileInfo, competencyInfo));
+        return userRepository.save(new User(name, email, loginId, password, interestField, techStack, desiredRole));
     }
 
     public User authenticateUser(String loginId, String password) {
-        User user = userRepository.findByProfileInfoLoginId(loginId)
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new DomainException("invalid login id or password."));
         if (!user.matchesPassword(password)) {
             throw new DomainException("invalid login id or password.");
