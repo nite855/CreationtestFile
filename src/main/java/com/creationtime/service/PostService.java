@@ -110,6 +110,17 @@ public class PostService {
         recruitPostRepository.save(recruitPost);
     }
 
+    @Transactional(readOnly = true)
+    public Post findPost(Long postId) {
+        return postRepository.findById(postId)
+            .orElseThrow(() -> new DomainException("post not found."));
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Post> findPostsByTeam(Long teamId) {
+        return postRepository.findByTeamId(teamId);
+    }
+    
     private Post findPost(Long id) {
         return postRepository.findById(id).orElseThrow(() -> new DomainException("post not found."));
     }
